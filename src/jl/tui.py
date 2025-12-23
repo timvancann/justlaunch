@@ -1,4 +1,6 @@
 from textual.app import App, ComposeResult
+import sys
+import os
 from textual.widgets import (
     Header,
     Footer,
@@ -16,7 +18,6 @@ from jl.parser import get_just_schema, parse_recipes, Recipe
 from jl.runner import JustRunner
 from jl.cache import ArgumentCache
 from jl.forms import ArgumentForm
-import os
 
 
 class RecipeItem(ListItem):
@@ -141,8 +142,8 @@ class JustApp(App):
     }
 
     RecipeItem {
-        height: auto;
-        padding: 1;
+        height: 2;
+        padding: 0 1;
     }
     """
 
@@ -153,6 +154,8 @@ class JustApp(App):
         ("alt+u", "scroll_details_up", "Body ↑"),
         ("ctrl+d", "scroll_log_down", "Log ↓"),
         ("ctrl+u", "scroll_log_up", "Log ↑"),
+        ("ctrl+j", "list_cursor_down", "Next"),
+        ("ctrl+k", "list_cursor_up", "Prev"),
     ]
 
     def __init__(self):
@@ -318,8 +321,22 @@ class JustApp(App):
 
 
 def run():
-    app = JustApp()
-    app.run()
+    # If "serve" is passed as an argument, run textual serve
+    if len(sys.argv) > 1 and sys.argv[1] == "serve":
+        try:
+            from textual_serve.server import Server
+        except ImportError:
+            print(
+                "textual-serve is required for the 'serve' command. Please install it."
+            )
+            sys.exit(1)
+
+        # Run the server with the "jl" command
+        server = Server(command="jl")
+        server.serve()
+    else:
+        app = JustApp()
+        app.run()
 
 
 if __name__ == "__main__":
