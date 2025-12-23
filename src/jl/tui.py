@@ -19,6 +19,43 @@ from jl.runner import JustRunner
 from jl.cache import ArgumentCache
 from jl.forms import ArgumentForm
 
+try:
+    from rapidfuzz import fuzz
+except ImportError:
+    # Fallback to simple matching if not installed (though it should be)
+    fuzz = None
+
+
+def fuzzy_match(query: str, text: str) -> bool:
+    """Returns True if query is a subsequence of text (case-insensitive)."""
+    # Empty query always matches
+    if not query:
+        return True
+
+    query = query.lower()
+    text = text.lower()
+
+    # Quick check for substring
+    if query in text:
+        return True
+
+    # Subsequence check
+    q_len = len(query)
+    t_len = len(text)
+
+    if q_len > t_len:
+        return False
+
+    t_idx = 0
+    q_idx = 0
+
+    while t_idx < t_len and q_idx < q_len:
+        if text[t_idx] == query[q_idx]:
+            q_idx += 1
+        t_idx += 1
+
+    return q_idx == q_len
+
 
 class RecipeItem(ListItem):
     """A ListItem that holds a Recipe."""
@@ -241,12 +278,39 @@ class JustApp(App):
         # Clear existing items
         command_list.clear()
 
-        # Filter and re-populate
+        # Filter and Score
+        scored_items = []
         for recipe in self.recipes:
-            if query in recipe.name.lower() or (
-                recipe.doc and query in recipe.doc.lower()
-            ):
-                command_list.append(RecipeItem(recipe))
+            # 1. Filter: Must be a subsequence match (keeps the "broad net")
+            name_match = fuzzy_match(query, recipe.name)
+            doc_match = recipe.doc and fuzzy_match(query, recipe.doc)
+
+            if name_match or doc_match:
+                # 2. Score: Higher is better
+                # We prioritize name matches over doc matches
+                score = 0
+                if fuzz:
+                    # Calculate ratio (0-100). Exact match = 100.
+                    # partial_ratio is good for substrings.
+                    # WRatio (Weighted Ratio) is often a good default.
+                    name_score = fuzz.WRatio(query, recipe.name)
+                    doc_score = fuzz.WRatio(query, recipe.doc) if recipe.doc else 0
+
+                    # Boost name matches significantly
+                    score = max(name_score, doc_score * 0.8)
+
+                    # Extra boost for exact starts-with logic which WRatio handles well,
+                    # but let's ensure shortness is rewarded (e.g. "lint" > "linting")
+                    # logic: simpler is closer to 100.
+
+                scored_items.append((score, recipe))
+
+        # Sort by score descending
+        scored_items.sort(key=lambda x: x[0], reverse=True)
+
+        # Populate list
+        for _, recipe in scored_items:
+            command_list.append(RecipeItem(recipe))
 
         # Select first item if matches found
         if len(command_list.children) > 0:

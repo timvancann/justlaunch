@@ -10,6 +10,7 @@ dependencies = [
     "rich>=14.2.0",
     "textual>=6.11.0",
     "textual-serve>=1.0.0",
+    "rapidfuzz>=3.0.0",
 ]
 
 [project.scripts]
