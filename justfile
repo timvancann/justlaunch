@@ -58,6 +58,9 @@ bump-version:
     
     echo "Updated pyproject.toml to $new_version"
     
+    # Update lockfile
+    uv lock
+    
     # Commit and tag
     git add pyproject.toml uv.lock
     git commit -m "Bump version to $new_version"
