@@ -24,17 +24,4 @@ build-backend = "hatchling.build"
 packages = ["src/jl"]
 
 [dependency-groups]
-dev = [
-    "textual-dev>=1.8.0",
-    "pytest-asyncio>=1.3.0",
-    "pytest>=9.0.2",
-    "commitizen>=4.1.0",
-]
-
-[tool.commitizen]
-name = "cz_conventional_commits"
-tag_format = "$version"
-version_scheme = "pep440"
-version_provider = "pep621"
-update_changelog_on_bump = true
-major_version_zero = true
+dev = ["textual-dev>=1.8.0", "pytest-asyncio>=1.3.0", "pytest>=9.0.2"]
