@@ -10,7 +10,13 @@ A powerful TUI (Terminal User Interface) for your `justfile` recipes. Browse, se
 
 ## Installation
 
-Install directly using `uv`:
+Try it out with:
+
+```bash
+uvx --from git+https://github.com/timvancann/justlaunch jl
+```
+
+Install/update directly using `uv`:
 
 ```bash
 uv tool install git+https://github.com/timvancann/justlaunch
