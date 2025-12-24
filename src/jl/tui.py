@@ -2,7 +2,6 @@ from textual.app import App, ComposeResult
 import sys
 import os
 from textual.widgets import (
-    Header,
     Footer,
     ListView,
     ListItem,
@@ -21,6 +20,9 @@ from jl.cache import ArgumentCache
 from jl.forms import ArgumentForm
 from loguru import logger
 from rich.text import Text
+
+logger.remove()
+logger.add("jl.log", level="INFO")
 
 try:
     from rapidfuzz import fuzz
@@ -70,14 +72,18 @@ class RecipeItem(ListItem):
             yield Label(f"[dim]{self.recipe.doc}[/dim]")
 
 
-class CommandList(ListView):
+class RecipeListView(ListView):
     """List of available recipes."""
 
     BINDINGS = [
-        Binding("j", "cursor_down", "Down", show=False),
-        Binding("k", "cursor_up", "Up", show=False),
+        Binding("ctrl+j", "cursor_down", "Down", show=True),
+        Binding("ctrl+k", "cursor_up", "Up", show=True),
         Binding("enter", "select", "Select"),
     ]
+
+    def clear(self) -> None:
+        logger.info("RecipeListView.clear() called")
+        super().clear()
 
 
 class SearchInput(Input):
@@ -159,7 +165,7 @@ class JustApp(App):
 
     def action_list_cursor_down(self):
         """Move cursor down in the command list."""
-        command_list = self.query_one("#command_list", CommandList)
+        command_list = self.query_one("#command_list", RecipeListView)
         if command_list.index is not None:
             command_list.action_cursor_down()
         else:
@@ -167,7 +173,7 @@ class JustApp(App):
 
     def action_list_cursor_up(self):
         """Move cursor up in the command list."""
-        command_list = self.query_one("#command_list", CommandList)
+        command_list = self.query_one("#command_list", RecipeListView)
         if command_list.index is not None:
             command_list.action_cursor_up()
 
@@ -193,8 +199,6 @@ class JustApp(App):
         log.scroll_page_up()
 
     def compose(self) -> ComposeResult:
-        yield Header()
-
         self.recipes = self.load_recipes()
 
         with Horizontal():
@@ -203,7 +207,8 @@ class JustApp(App):
                 yield SearchInput(placeholder="Search...", id="search_input")
 
                 recipe_items = [RecipeItem(r) for r in self.recipes]
-                yield CommandList(*recipe_items, id="command_list")
+                # logger.info(recipe_items)
+                yield RecipeListView(*recipe_items, id="command_list")
 
             with Vertical(id="main_content"):
                 yield Static("Select a recipe to see details.", id="details")
@@ -213,8 +218,12 @@ class JustApp(App):
 
     @on(Input.Changed, "#search_input")
     def on_search_changed(self, event: Input.Changed):
+        # Strict check to ensure we only respond to search input
+        if event.input.id != "search_input":
+            return
+
         query = event.value.lower()
-        command_list = self.query_one("#command_list", CommandList)
+        command_list = self.query_one("#command_list", RecipeListView)
 
         command_list.clear()
 
@@ -240,6 +249,14 @@ class JustApp(App):
 
         if len(command_list.children) > 0:
             command_list.index = 0
+
+        logger.info(f"Search query: '{query}', matches: {len(scored_items)}")
+
+    @on(Input.Changed)
+    def on_any_input_changed(self, event: Input.Changed):
+        logger.info(
+            f"Input changed from widget ID: {event.input.id}, value: '{event.value}'"
+        )
 
     @on(ListView.Selected)
     def on_recipe_selected(self, event: ListView.Selected):
@@ -273,7 +290,7 @@ class JustApp(App):
 
     @on(Input.Submitted, "#search_input")
     def on_search_submitted(self, event: Input.Submitted):
-        command_list = self.query_one("#command_list", CommandList)
+        command_list = self.query_one("#command_list", RecipeListView)
         if command_list.highlighted_child:
             self.initiate_run(command_list.highlighted_child.recipe)
 
