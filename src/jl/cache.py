@@ -2,6 +2,7 @@ import json
 import os
 from pathlib import Path
 from typing import Dict, Any, Optional
+from loguru import logger
 
 
 class ArgumentCache:
@@ -9,7 +10,6 @@ class ArgumentCache:
 
     def __init__(self, cache_dir: Optional[Path] = None):
         if cache_dir is None:
-            # Default to ~/.cache/justlaunch
             cache_dir = Path.home() / ".cache" / "justlaunch"
 
         self.cache_file = cache_dir / "history.json"
@@ -25,8 +25,7 @@ class ArgumentCache:
             with open(self.cache_file, "r") as f:
                 self.cache = json.load(f)
         except (json.JSONDecodeError, OSError) as e:
-            # corrupt cache, ignore
-            print(f"Warning: Failed to load cache: {e}")
+            logger.warning("Failed to load cache: {}", e)
             self.cache = {}
 
     def _save(self):
@@ -36,11 +35,11 @@ class ArgumentCache:
             with open(self.cache_file, "w") as f:
                 json.dump(self.cache, f, indent=2)
         except OSError as e:
-            print(f"Warning: Failed to save cache: {e}")
+            logger.warning("Failed to save cache: {}", e)
 
     def _get_key(self, justfile_path: str, recipe_name: str) -> str:
         """Generates a unique key for a recipe in a specific justfile."""
-        # Normalize path
+
         abs_path = os.path.abspath(justfile_path)
         return f"{abs_path}::{recipe_name}"
 

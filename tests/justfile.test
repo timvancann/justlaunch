@@ -1,0 +1,7 @@
+# Build the project
+build:
+    uv build
+
+# Deploy to a specific environment
+deploy env:
+    echo "Deploying to {{env}}"

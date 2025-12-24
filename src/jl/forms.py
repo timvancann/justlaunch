@@ -20,36 +20,6 @@ class FormResult:
 class ArgumentForm(ModalScreen[FormResult]):
     """Modal screen to input arguments for a recipe."""
 
-    CSS = """
-    ArgumentForm {
-        align: center middle;
-    }
-    
-    #dialog {
-        padding: 0 1;
-        width: 60;
-        height: auto;
-        border: thick $background 80%;
-        background: $surface;
-    }
-    
-    .arg-label {
-        padding-top: 1;
-    }
-    
-    #buttons {
-        width: 100%;
-        height: auto;
-        dock: bottom;
-        padding-top: 1;
-        align: right bottom;
-    }
-    
-    Button {
-        margin-left: 1;
-    }
-    """
-
     BINDINGS = [
         ("escape", "cancel", "Cancel"),
     ]
@@ -67,7 +37,6 @@ class ArgumentForm(ModalScreen[FormResult]):
                 f"[bold]Arguments for {self.recipe.name}[/bold]", classes="header"
             )
 
-            # Load cached args
             cached_args = self.cache.get_last_arguments(
                 self.justfile_path, self.recipe.name
             )
@@ -75,8 +44,6 @@ class ArgumentForm(ModalScreen[FormResult]):
             for arg in self.recipe.arguments:
                 yield Label(f"{arg.name}:", classes="arg-label")
 
-                # Determine default value
-                # Priority: Cache > Default in Justfile > Empty
                 value = cached_args.get(arg.name)
                 if value is None and arg.default:
                     value = arg.default
@@ -92,7 +59,6 @@ class ArgumentForm(ModalScreen[FormResult]):
                 yield Button("Run", variant="primary", id="submit")
 
     def on_mount(self):
-        # Focus first input
         if self.inputs:
             first_input = list(self.inputs.values())[0]
             first_input.focus()
@@ -107,15 +73,11 @@ class ArgumentForm(ModalScreen[FormResult]):
 
     @on(Input.Submitted)
     def on_input_submitted(self, event: Input.Submitted):
-        # If enter on last input, submit. Else move next?
-        # Textual Input Enter usually triggers submission.
-        # Let's simple submit on any enter for now, or check focus.
         self._submit()
 
     def _submit(self):
         args = {name: inp.value for name, inp in self.inputs.items()}
 
-        # Update cache
         self.cache.save_arguments(self.justfile_path, self.recipe.name, args)
 
         self.dismiss(FormResult(arguments=args, cancelled=False))

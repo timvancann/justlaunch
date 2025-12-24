@@ -11,9 +11,6 @@ def test_fuzzy_match_requirement():
 
     query = "rn"
 
-    # We want this to be True
-    # 'rn' is a subsequence of 'run' (r-u-n)
-
     is_match = fuzzy_match(query, recipe.name)
 
     assert is_match, "Expected 'rn' to fuzzy match 'run'"

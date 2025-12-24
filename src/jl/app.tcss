@@ -1,0 +1,84 @@
+/* Main App Styles */
+Screen {
+    layout: horizontal;
+}
+
+#sidebar {
+    width: 30%;
+    height: 100%;
+    border-right: solid $primary;
+}
+
+#search_input {
+    dock: top;
+    margin: 1 1 0 1;
+}
+
+#env_select {
+    dock: top;
+    margin: 1;
+}
+
+#command_list {
+    height: 1fr;
+    overflow-y: auto;
+}
+
+#main_content {
+    width: 70%;
+    height: 100%;
+    padding: 1;
+    layout: vertical;
+}
+
+#details {
+    height: 40%;
+    border-bottom: solid $secondary;
+    overflow-y: auto;
+    padding: 1;
+}
+
+#log {
+    height: 60%;
+    overflow-y: auto;
+    border: solid $accent;
+}
+
+.sidebar-header {
+    padding-left: 1;
+    padding-top: 1;
+}
+
+RecipeItem {
+    height: 2;
+    padding: 0 1;
+}
+
+/* Argument Form Styles */
+ArgumentForm {
+    align: center middle;
+}
+
+#dialog {
+    padding: 0 1;
+    width: 60;
+    height: auto;
+    border: thick $background 80%;
+    background: $surface;
+}
+
+.arg-label {
+    padding-top: 1;
+}
+
+#buttons {
+    width: 100%;
+    height: auto;
+    dock: bottom;
+    padding-top: 1;
+    align: right bottom;
+}
+
+Button {
+    margin-left: 1;
+}

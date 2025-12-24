@@ -35,5 +35,8 @@ dummy-stream count="5" delay="0.5":
         time.sleep(delay)
     print("Done!")
 
-docker build:
-    docker build -t jl .
+docker-build tag="latest":
+    docker build -t jl:{{tag}} .
+
+test:
+    uv run pytest

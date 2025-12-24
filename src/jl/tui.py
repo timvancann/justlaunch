@@ -14,32 +14,31 @@ from textual.widgets import (
 from textual.containers import Horizontal, Vertical
 from textual import on, events, work
 from textual.binding import Binding
+from pathlib import Path
 from jl.parser import get_just_schema, parse_recipes, Recipe
 from jl.runner import JustRunner
 from jl.cache import ArgumentCache
 from jl.forms import ArgumentForm
+from loguru import logger
 
 try:
     from rapidfuzz import fuzz
 except ImportError:
-    # Fallback to simple matching if not installed (though it should be)
     fuzz = None
 
 
 def fuzzy_match(query: str, text: str) -> bool:
     """Returns True if query is a subsequence of text (case-insensitive)."""
-    # Empty query always matches
+
     if not query:
         return True
 
     query = query.lower()
     text = text.lower()
 
-    # Quick check for substring
     if query in text:
         return True
 
-    # Subsequence check
     q_len = len(query)
     t_len = len(text)
 
@@ -100,7 +99,6 @@ class SearchInput(Input):
         event.stop()
 
     def key_tab(self, event: events.Key) -> None:
-        # Cycle down on tab
         self.app.action_list_cursor_down()
         event.stop()
 
@@ -127,62 +125,7 @@ class SearchInput(Input):
 class JustApp(App):
     """A TUI for JustLaunch."""
 
-    CSS = """
-    Screen {
-        layout: horizontal;
-    }
-    
-    #sidebar {
-        width: 30%;
-        height: 100%;
-        border-right: solid $primary;
-    }
-    
-    #search_input {
-        dock: top;
-        margin: 1 1 0 1;
-    }
-    
-    #env_select {
-        dock: top;
-        margin: 1;
-    }
-
-    #command_list {
-         height: 1fr; 
-         overflow-y: auto;
-    }
-    
-    #main_content {
-        width: 70%;
-        height: 100%;
-        padding: 1;
-        layout: vertical;
-    }
-    
-    #details {
-        height: 40%;
-        border-bottom: solid $secondary;
-        overflow-y: auto;
-        padding: 1;
-    }
-    
-    #log {
-        height: 60%;
-        overflow-y: auto;
-        border: solid $accent;
-    }
-    
-    .sidebar-header {
-        padding-left: 1;
-        padding-top: 1;
-    }
-
-    RecipeItem {
-        height: 2;
-        padding: 0 1;
-    }
-    """
+    CSS_PATH = Path(__file__).parent / "app.tcss"
 
     BINDINGS = [
         ("q", "quit", "Quit"),
@@ -199,8 +142,7 @@ class JustApp(App):
         super().__init__()
         self.theme = "dracula"
         self.recipes = []
-        # Assumption: running from root where justfile is.
-        # In a real app we might search or accept args.
+
         start_dir = os.getcwd()
         self.justfile_path = os.path.join(start_dir, "justfile")
         self.arg_cache = ArgumentCache()
@@ -241,9 +183,7 @@ class JustApp(App):
     def action_scroll_log_down(self):
         """Scroll log view down."""
         log = self.query_one("#log", RichLog)
-        # Scroll roughly half a page or a set amount.
-        # RichLog doesn't have scroll_page_down exposed directly in same way as scrollable,
-        # but it inherits from Scrollable.
+
         log.scroll_page_down()
 
     def action_scroll_log_up(self):
@@ -260,7 +200,7 @@ class JustApp(App):
             with Vertical(id="sidebar"):
                 yield Label("[bold]Recipes[/bold]", classes="sidebar-header")
                 yield SearchInput(placeholder="Search...", id="search_input")
-                # Populate list
+
                 recipe_items = [RecipeItem(r) for r in self.recipes]
                 yield CommandList(*recipe_items, id="command_list")
 
@@ -275,44 +215,28 @@ class JustApp(App):
         query = event.value.lower()
         command_list = self.query_one("#command_list", CommandList)
 
-        # Clear existing items
         command_list.clear()
 
-        # Filter and Score
         scored_items = []
         for recipe in self.recipes:
-            # 1. Filter: Must be a subsequence match (keeps the "broad net")
             name_match = fuzzy_match(query, recipe.name)
             doc_match = recipe.doc and fuzzy_match(query, recipe.doc)
 
             if name_match or doc_match:
-                # 2. Score: Higher is better
-                # We prioritize name matches over doc matches
                 score = 0
                 if fuzz:
-                    # Calculate ratio (0-100). Exact match = 100.
-                    # partial_ratio is good for substrings.
-                    # WRatio (Weighted Ratio) is often a good default.
                     name_score = fuzz.WRatio(query, recipe.name)
                     doc_score = fuzz.WRatio(query, recipe.doc) if recipe.doc else 0
 
-                    # Boost name matches significantly
                     score = max(name_score, doc_score * 0.8)
-
-                    # Extra boost for exact starts-with logic which WRatio handles well,
-                    # but let's ensure shortness is rewarded (e.g. "lint" > "linting")
-                    # logic: simpler is closer to 100.
 
                 scored_items.append((score, recipe))
 
-        # Sort by score descending
         scored_items.sort(key=lambda x: x[0], reverse=True)
 
-        # Populate list
         for _, recipe in scored_items:
             command_list.append(RecipeItem(recipe))
 
-        # Select first item if matches found
         if len(command_list.children) > 0:
             command_list.index = 0
 
@@ -348,7 +272,6 @@ class JustApp(App):
 
     @on(Input.Submitted, "#search_input")
     def on_search_submitted(self, event: Input.Submitted):
-        # Run the currently selected recipe
         command_list = self.query_one("#command_list", CommandList)
         if command_list.highlighted_child:
             self.initiate_run(command_list.highlighted_child.recipe)
@@ -358,7 +281,6 @@ class JustApp(App):
 
             def handler(result):
                 if result and not result.cancelled:
-                    # Construct positional arguments in order
                     args_list = []
                     for arg in recipe.arguments:
                         val = result.arguments.get(arg.name)
@@ -385,17 +307,15 @@ class JustApp(App):
 
 
 def run():
-    # If "serve" is passed as an argument, run textual serve
     if len(sys.argv) > 1 and sys.argv[1] == "serve":
         try:
             from textual_serve.server import Server
         except ImportError:
-            print(
+            logger.error(
                 "textual-serve is required for the 'serve' command. Please install it."
             )
             sys.exit(1)
 
-        # Run the server with the "jl" command
         server = Server(command="jl")
         server.serve()
     else:

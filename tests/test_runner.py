@@ -6,7 +6,6 @@ from jl.runner import JustRunner
 @pytest.mark.asyncio
 async def test_run_recipe_success():
     with patch("asyncio.create_subprocess_exec") as mock_exec:
-        # Mock process
         mock_process = AsyncMock()
         mock_process.stdout.readline = AsyncMock(
             side_effect=[b"Building project...\n", b"Done.\n", b""]

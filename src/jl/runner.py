@@ -22,7 +22,6 @@ class JustRunner:
             stderr=asyncio.subprocess.STDOUT,
         )
 
-        # Read output line by line
         if process.stdout:
             while True:
                 line = await process.stdout.readline()

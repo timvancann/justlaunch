@@ -1,5 +1,5 @@
 from rapidfuzz import fuzz
-from jl.tui import JustApp, RecipeItem, Recipe
+from jl.tui import JustApp, Recipe
 import pytest
 
 
@@ -10,7 +10,6 @@ async def test_search_ranking():
     """
     app = JustApp()
 
-    # Mock recipes
     r1 = Recipe(
         name="complex_test",
         doc="Test command with multiple arguments and linting",
@@ -24,15 +23,10 @@ async def test_search_ranking():
 
     app.recipes = [r1, r2, r3]
 
-    # Manually trigger the logic that happens in on_search_changed
-    # We can't easily perform a full integration test without running the app,
-    # so lets simulate the sorting logic which is the core requirement.
-
     query = "lint"
 
     scored_items = []
     for recipe in app.recipes:
-        # Simulate the scoring logic from tui.py
         name_score = fuzz.WRatio(query, recipe.name)
         doc_score = fuzz.WRatio(query, recipe.doc) if recipe.doc else 0
         score = max(name_score, doc_score * 0.8)
@@ -40,7 +34,6 @@ async def test_search_ranking():
 
     scored_items.sort(key=lambda x: x[0], reverse=True)
 
-    # Verify order
     ranked_names = [r.name for _, r in scored_items]
 
     print(f"Ranked names: {ranked_names}")
