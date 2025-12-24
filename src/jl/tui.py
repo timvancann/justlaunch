@@ -20,6 +20,7 @@ from jl.runner import JustRunner
 from jl.cache import ArgumentCache
 from jl.forms import ArgumentForm
 from loguru import logger
+from rich.text import Text
 
 try:
     from rapidfuzz import fuzz
@@ -303,7 +304,7 @@ class JustApp(App):
         log.write(f"\n[bold blue]Running {recipe.name}...[/bold blue]")
 
         async for line in JustRunner.run_recipe(recipe.name, args):
-            log.write(line)
+            log.write(Text.from_ansi(line))
 
 
 def run():

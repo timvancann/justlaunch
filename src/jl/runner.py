@@ -32,6 +32,6 @@ class JustRunner:
         await process.wait()
 
         if process.returncode != 0:
-            yield f"[bold red]Exited with code {process.returncode}[/bold red]"
+            yield f"\033[1;31mExited with code {process.returncode}\033[0m"
         else:
-            yield "[bold green]Success[/bold green]"
+            yield "\033[1;32mSuccess\033[0m"

@@ -22,7 +22,7 @@ async def test_run_recipe_success():
         assert lines == [
             "Building project...",
             "Done.",
-            "[bold green]Success[/bold green]",
+            "\033[1;32mSuccess\033[0m",
         ]
         mock_exec.assert_called_with(
             "just",
@@ -46,4 +46,4 @@ async def test_run_recipe_failure():
         async for line in JustRunner.run_recipe("fail"):
             lines.append(line)
 
-        assert lines == ["Error!", "[bold red]Exited with code 1[/bold red]"]
+        assert lines == ["Error!", "\033[1;31mExited with code 1\033[0m"]
