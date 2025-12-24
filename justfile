@@ -44,31 +44,42 @@ test:
 bump-version:
     #!/usr/bin/env bash
     set -e
-    current_version=$(grep '^version =' pyproject.toml | cut -d '"' -f2)
-    echo "Current version: $current_version"
-    read -p "Enter new version: " new_version
     
-    if [ -z "$new_version" ]; then
-        echo "Version cannot be empty."
+    # Check status
+    if [ -n "$(git status --porcelain)" ]; then
+        echo "Git working directory not clean. Please commit or stash changes first."
         exit 1
     fi
+
+    # Dry run to see what will happen
+    echo "Dry run:"
+    uv run cz bump --dry-run
+    read -p "Continue? [y/N] " confirm
+    if [[ $confirm != [yY] && $confirm != [yY][eE][sS] ]]; then
+        exit 1
+    fi
+
+    # Bump metadata files only (pyproject.toml, CHANGELOG.md)
+    uv run cz bump --files-only
     
-    # Update pyproject.toml using python for safety
-    uv run python -c "import re; c=open('pyproject.toml').read(); open('pyproject.toml','w').write(re.sub(r'version = \".*\"', f'version = \"$new_version\"', c, count=1))"
-    
-    echo "Updated pyproject.toml to $new_version"
-    
-    # Update lockfile
+    # Sync lockfile
     uv lock
     
-    # Commit and tag
-    git add pyproject.toml uv.lock
-    git commit -m "Bump version to $new_version"
-    git tag "$new_version"
+    # Commit
+    git add pyproject.toml uv.lock CHANGELOG.md
+    
+    # Get the new version for the tag message
+    new_version=$(grep '^version =' pyproject.toml | cut -d '"' -f2)
+    
+    # Commit
+    git commit -m "bump: version $new_version"
+    
+    # Tag
+    git tag "v$new_version"
     
     # Push
     echo "Pushing changes..."
     git push origin main
-    git push origin "$new_version"
+    git push origin "v$new_version"
     
     echo "Done! You can now run: uv tool upgrade justlaunch"
