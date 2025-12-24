@@ -1,6 +1,6 @@
 [project]
 name = "justlaunch"
-version = "0.1.4"
+version = "0.1.5"
 description = "Add your description here"
 readme = "README.md"
 authors = [{ name = "Tim van Cann", email = "timvancann@gmail.com" }]
