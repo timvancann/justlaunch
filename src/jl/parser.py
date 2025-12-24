@@ -18,6 +18,7 @@ class Recipe:
     doc: str
     arguments: List[Argument]
     body: List[List[str]]
+    is_interactive: bool = False
 
 
 def get_just_schema() -> Dict[str, Any]:
@@ -48,7 +49,9 @@ def parse_recipes(schema: Dict[str, Any]) -> List[Recipe]:
         doc = data.get("doc", "")
         if doc is None:
             doc = ""
-        doc = doc.strip()
+
+        is_interactive = "[interactive]" in doc
+        doc = doc.replace("[interactive]", "").strip()
 
         args = []
         for arg_data in data.get("parameters", []):
@@ -81,6 +84,14 @@ def parse_recipes(schema: Dict[str, Any]) -> List[Recipe]:
                             line_str += subitem
             simple_body.append([line_str])
 
-        recipes.append(Recipe(name=name, doc=doc, arguments=args, body=simple_body))
+        recipes.append(
+            Recipe(
+                name=name,
+                doc=doc,
+                arguments=args,
+                body=simple_body,
+                is_interactive=is_interactive,
+            )
+        )
 
     return recipes

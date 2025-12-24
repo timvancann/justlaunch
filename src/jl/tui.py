@@ -299,6 +299,24 @@ class JustApp(App):
     async def run_recipe_with_args(self, recipe: Recipe, args: list[str]):
         log = self.query_one("#log", RichLog)
 
+        if recipe.is_interactive:
+            # For interactive recipes, we suspend the app and run the command directly
+            # in the terminal so the user can interact with it.
+            with self.suspend():
+                cmd = ["just", recipe.name]
+                if args:
+                    cmd.extend(args)
+                # Use subprocess.call to block until finished
+                # We need to import subprocess
+                import subprocess
+
+                subprocess.call(cmd)
+            # After returning, maybe log that it finished?
+            log.write(
+                f"\n[bold yellow]Interactive recipe {recipe.name} finished.[/bold yellow]"
+            )
+            return
+
         log.clear()
 
         log.write(f"\n[bold blue]Running {recipe.name}...[/bold blue]")
