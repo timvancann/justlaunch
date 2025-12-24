@@ -1,6 +1,10 @@
-# JustLaunch (jl)
+# JustLaunch (`jl`)
 
 A powerful TUI (Terminal User Interface) for your `justfile` recipes. Browse, search, and execute commands with ease.
+
+> **Justfiles are AM-A-ZING.** But let's be real: they have a habit of growing out of proportion. As features pile up, so do the recipes, until your `justfile` becomes a scrolling nightmare.
+>
+> My brain... isn't quite what it used to be. I needed help remembering if it was `just deploy-prod` or `just prod-deploy`. So I built this UI—a neat, brain-friendly helper to tame your massive `justfiles`.
 
 ![JustLaunch Demo](assets/app.png)
 
