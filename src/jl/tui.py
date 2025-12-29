@@ -12,7 +12,6 @@ from textual.widgets import (
 )
 from textual.containers import Horizontal, Vertical
 from textual import on, events, work
-from textual.binding import Binding
 from pathlib import Path
 from jl.parser import get_just_schema, parse_recipes, Recipe
 from jl.runner import JustRunner
@@ -20,9 +19,6 @@ from jl.cache import ArgumentCache
 from jl.forms import ArgumentForm
 from loguru import logger
 from rich.text import Text
-
-logger.remove()
-logger.add("jl.log", level="INFO")
 
 try:
     from rapidfuzz import fuzz
@@ -76,18 +72,33 @@ class RecipeListView(ListView):
     """List of available recipes."""
 
     BINDINGS = [
-        Binding("ctrl+j", "cursor_down", "Down", show=True),
-        Binding("ctrl+k", "cursor_up", "Up", show=True),
-        Binding("enter", "select", "Select"),
+        ("alt+d", "scroll_details_down", "Body ↓"),
+        ("alt+u", "scroll_details_up", "Body ↑"),
+        ("ctrl+d", "scroll_log_down", "Log ↓"),
+        ("ctrl+u", "scroll_log_up", "Log ↑"),
+        ("ctrl+j", "list_cursor_down", "Next"),
+        ("ctrl+k", "list_cursor_up", "Prev"),
+        ("down", "list_cursor_down", "Next"),
+        ("up", "list_cursor_up", "Prev"),
     ]
 
     def clear(self) -> None:
-        logger.info("RecipeListView.clear() called")
         super().clear()
 
 
 class SearchInput(Input):
     """Input widget that handles navigation keys for the command list."""
+
+    BINDINGS = [
+        ("alt+d", "scroll_details_down", "Body ↓"),
+        ("alt+u", "scroll_details_up", "Body ↑"),
+        ("ctrl+d", "scroll_log_down", "Log ↓"),
+        ("ctrl+u", "scroll_log_up", "Log ↑"),
+        ("ctrl+j", "list_cursor_down", "Next"),
+        ("ctrl+k", "list_cursor_up", "Prev"),
+        ("down", "list_cursor_down", "Next"),
+        ("up", "list_cursor_up", "Prev"),
+    ]
 
     def key_down(self, event: events.Key) -> None:
         self.app.action_list_cursor_down()
@@ -143,6 +154,8 @@ class JustApp(App):
         ("ctrl+u", "scroll_log_up", "Log ↑"),
         ("ctrl+j", "list_cursor_down", "Next"),
         ("ctrl+k", "list_cursor_up", "Prev"),
+        ("down", "list_cursor_down", "Next"),
+        ("up", "list_cursor_up", "Prev"),
     ]
 
     def __init__(self):
@@ -207,7 +220,6 @@ class JustApp(App):
                 yield SearchInput(placeholder="Search...", id="search_input")
 
                 recipe_items = [RecipeItem(r) for r in self.recipes]
-                # logger.info(recipe_items)
                 yield RecipeListView(*recipe_items, id="command_list")
 
             with Vertical(id="main_content"):
@@ -249,14 +261,6 @@ class JustApp(App):
 
         if len(command_list.children) > 0:
             command_list.index = 0
-
-        logger.info(f"Search query: '{query}', matches: {len(scored_items)}")
-
-    @on(Input.Changed)
-    def on_any_input_changed(self, event: Input.Changed):
-        logger.info(
-            f"Input changed from widget ID: {event.input.id}, value: '{event.value}'"
-        )
 
     @on(ListView.Selected)
     def on_recipe_selected(self, event: ListView.Selected):
