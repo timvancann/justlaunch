@@ -1,10 +1,10 @@
 [project]
 name = "justlaunch"
-version = "0.1.6"
+version = "0.1.7"
 description = "Add your description here"
 readme = "README.md"
 authors = [{ name = "Tim van Cann", email = "timvancann@gmail.com" }]
-requires-python = ">=3.14"
+requires-python = ">=3.12"
 dependencies = [
     "rich>=14.2.0",
     "textual>=6.11.0",
