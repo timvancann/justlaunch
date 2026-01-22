@@ -9,8 +9,10 @@ from textual.widgets import (
     Static,
     Input,
     RichLog,
+    Button,
 )
 from textual.containers import Horizontal, Vertical
+from textual.reactive import reactive
 from textual import on, events, work
 from pathlib import Path
 from jl.parser import get_just_schema, parse_recipes, Recipe
@@ -80,6 +82,7 @@ class RecipeListView(ListView):
         ("ctrl+k", "list_cursor_up", "Prev"),
         ("down", "list_cursor_down", "Next"),
         ("up", "list_cursor_up", "Prev"),
+        ("ctrl+o", "toggle_auto_scroll", "Auto-scroll"),
     ]
 
     def clear(self) -> None:
@@ -98,6 +101,7 @@ class SearchInput(Input):
         ("ctrl+k", "list_cursor_up", "Prev"),
         ("down", "list_cursor_down", "Next"),
         ("up", "list_cursor_up", "Prev"),
+        ("ctrl+o", "toggle_auto_scroll", "Auto-scroll"),
     ]
 
     def key_down(self, event: events.Key) -> None:
@@ -139,11 +143,17 @@ class SearchInput(Input):
         self.app.action_scroll_log_up()
         event.stop()
 
+    def key_ctrl_o(self, event: events.Key) -> None:
+        self.app.action_toggle_auto_scroll()
+        event.stop()
+
 
 class JustApp(App):
     """A TUI for JustLaunch."""
 
     CSS_PATH = Path(__file__).parent / "app.tcss"
+
+    auto_scroll = reactive(True)
 
     BINDINGS = [
         ("q", "quit", "Quit"),
@@ -156,6 +166,7 @@ class JustApp(App):
         ("ctrl+k", "list_cursor_up", "Prev"),
         ("down", "list_cursor_down", "Next"),
         ("up", "list_cursor_up", "Prev"),
+        ("ctrl+o", "toggle_auto_scroll", "Auto-scroll"),
     ]
 
     def __init__(self):
@@ -211,6 +222,25 @@ class JustApp(App):
         log = self.query_one("#log", RichLog)
         log.scroll_page_up()
 
+    def action_toggle_auto_scroll(self):
+        """Toggle auto-scroll for log view."""
+        self.auto_scroll = not self.auto_scroll
+
+    def watch_auto_scroll(self, auto_scroll: bool) -> None:
+        """Update RichLog and button when auto_scroll changes."""
+        try:
+            log = self.query_one("#log", RichLog)
+            log.auto_scroll = auto_scroll
+            btn = self.query_one("#auto_scroll_btn", Button)
+            if auto_scroll:
+                btn.label = "Auto-scroll: ON"
+                btn.variant = "success"
+            else:
+                btn.label = "Auto-scroll: OFF"
+                btn.variant = "default"
+        except Exception:
+            pass  # Widgets not yet mounted
+
     def compose(self) -> ComposeResult:
         self.recipes = self.load_recipes()
 
@@ -224,9 +254,20 @@ class JustApp(App):
 
             with Vertical(id="main_content"):
                 yield Static("Select a recipe to see details.", id="details")
+                with Horizontal(id="log_header"):
+                    yield Label("[bold]Output[/bold]", id="log_title")
+                    yield Button(
+                        "Auto-scroll: ON",
+                        id="auto_scroll_btn",
+                        variant="success",
+                    )
                 yield RichLog(id="log", highlight=True, markup=True)
 
         yield Footer()
+
+    @on(Button.Pressed, "#auto_scroll_btn")
+    def on_auto_scroll_pressed(self, event: Button.Pressed):
+        self.action_toggle_auto_scroll()
 
     @on(Input.Changed, "#search_input")
     def on_search_changed(self, event: Input.Changed):

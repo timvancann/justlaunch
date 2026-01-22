@@ -38,8 +38,23 @@ Screen {
     padding: 1;
 }
 
+#log_header {
+    height: auto;
+    width: 100%;
+    align: left middle;
+    padding: 0 1;
+}
+
+#log_title {
+    width: 1fr;
+}
+
+#auto_scroll_btn {
+    min-width: 18;
+}
+
 #log {
-    height: 60%;
+    height: 1fr;
     overflow-y: auto;
     border: solid $accent;
 }
